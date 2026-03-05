@@ -25,7 +25,7 @@ describe('focusManager', () => {
     expect(remove2Spy).not.toHaveBeenCalled()
   })
 
-  it('should use focused boolean arg', async () => {
+  it('should use focused boolean arg', () => {
     let count = 0
 
     const setup = (setFocused: (focused?: boolean) => void) => {
@@ -38,7 +38,7 @@ describe('focusManager', () => {
 
     focusManager.setEventListener(setup)
 
-    await vi.advanceTimersByTimeAsync(20)
+    vi.advanceTimersByTime(20)
     expect(count).toEqual(1)
     expect(focusManager.isFocused()).toBeTruthy()
   })
@@ -98,7 +98,7 @@ describe('focusManager', () => {
 
     unsubscribe()
 
-    // Should unsubscribe our event event
+    // Should unsubscribe our event listener once
     expect(unsubscribeSpy).toHaveBeenCalledTimes(1)
 
     handlerSpy.mockRestore()

@@ -3,7 +3,7 @@ id: query-keys
 title: Query Keys
 ---
 
-At its core, TanStack Query manages query caching for you based on query keys. Query keys have to be an Array at the top level, and can be as simple as an Array with a single string, or as complex as an array of many strings and nested objects. As long as the query key is serializable, and **unique to the query's data**, you can use it!
+At its core, TanStack Query manages query caching for you based on query keys. Query keys have to be an Array at the top level, and can be as simple as an Array with a single string, or as complex as an array of many strings and nested objects. As long as the query key is serializable using `JSON.stringify`, and **unique to the query's data**, you can use it!
 
 ## Simple Query Keys
 
@@ -97,7 +97,7 @@ Note that query keys act as dependencies for your query functions. Adding depend
 
 ## Further reading
 
-For tips on organizing Query Keys in larger applications, have a look at [Effective React Query Keys](../community/tkdodos-blog.md#8-effective-react-query-keys) and check the [Query Key Factory Package](../community/community-projects.md#query-key-factory) from
-the Community Resources.
+For tips on organizing Query Keys in larger applications, have a look at [Effective React Query Keys](https://tkdodo.eu/blog/effective-react-query-keys) and check the [Query Key Factory Package](https://github.com/lukemorales/query-key-factory) from
+the [Community Resources](../../../community-resources).
 
 [//]: # 'Materials'

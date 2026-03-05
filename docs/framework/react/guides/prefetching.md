@@ -26,8 +26,8 @@ Before jumping into the different specific prefetch patterns, let's look at the 
   - If you want to ignore `staleTime` and instead always return data if it's available in the cache, you can use the `ensureQueryData` function.
   - Tip: If you are prefetching on the server, set a default `staleTime` higher than `0` for that `queryClient` to avoid having to pass in a specific `staleTime` to each prefetch call
 - If no instances of `useQuery` appear for a prefetched query, it will be deleted and garbage collected after the time specified in `gcTime`
-- These functions returns `Promise<void>` and thus never return query data. If that's something you need, use `fetchQuery`/`fetchInfiniteQuery` instead.
-- The prefetch functions never throws errors because they usually try to fetch again in a `useQuery` which is a nice graceful fallback. If you need to catch errors, use `fetchQuery`/`fetchInfiniteQuery` instead.
+- These functions return `Promise<void>` and thus never return query data. If that's something you need, use `fetchQuery`/`fetchInfiniteQuery` instead.
+- The prefetch functions never throw errors because they usually try to fetch again in a `useQuery` which is a nice graceful fallback. If you need to catch errors, use `fetchQuery`/`fetchInfiniteQuery` instead.
 
 This is how you use `prefetchQuery`:
 
@@ -369,7 +369,7 @@ Because data fetching in the component tree itself can easily lead to request wa
 
 In this approach, you explicitly declare for each _route_ what data is going to be needed for that component tree, ahead of time. Because Server Rendering has traditionally needed all data to be loaded before rendering starts, this has been the dominating approach for SSR'd apps for a long time. This is still a common approach and you can read more about it in the [Server Rendering & Hydration guide](./ssr.md).
 
-For now, let's focus on the client side case and look at an example of how you can make this work with [Tanstack Router](https://tanstack.com/router). These examples leave out a lot of setup and boilerplate to stay concise, you can check out a [full React Query example](https://tanstack.com/router/.latest/docs/framework/react/examples/basic-react-query-file-based) over in the [Tanstack Router docs](https://tanstack.com/router/latest/docs).
+For now, let's focus on the client side case and look at an example of how you can make this work with [TanStack Router](https://tanstack.com/router). These examples leave out a lot of setup and boilerplate to stay concise, you can check out a [full React Query example](https://tanstack.com/router/latest/docs/framework/react/examples/basic-react-query-file-based) over in the [TanStack Router docs](https://tanstack.com/router/latest/docs).
 
 When integrating at the router level, you can choose to either _block_ rendering of that route until all data is present, or you can start a prefetch but not await the result. That way, you can start rendering the route as soon as possible. You can also mix these two approaches and await some critical data, but start rendering before all the secondary data has finished loading. In this example, we'll configure an `/article` route to not render until the article data has finished loading, as well as start prefetching comments as soon as possible, but not block rendering the route if comments haven't finished loading yet.
 
@@ -412,7 +412,7 @@ const articleRoute = new Route({
 })
 ```
 
-Integration with other routers is also possible, see the [React Router example](../examples/react/react-router) for another demonstration.
+Integration with other routers is also possible, see the [react-router](../examples/react-router) for another demonstration.
 
 [//]: # 'Router'
 
@@ -431,8 +431,8 @@ queryClient.setQueryData(['todos'], todos)
 
 ## Further reading
 
-For a deep-dive on how to get data into your Query Cache before you fetch, have a look at [#17: Seeding the Query Cache](../community/tkdodos-blog.md#17-seeding-the-query-cache) from the Community Resources.
+For a deep-dive on how to get data into your Query Cache before you fetch, see the [article Seeding the Query Cache by TkDodo](https://tkdodo.eu/blog/seeding-the-query-cache).
 
-Integrating with Server Side routers and frameworks is very similar to what we just saw, with the addition that the data has to passed from the server to the client to be hydrated into the cache there. To learn how, continue on to the [Server Rendering & Hydration guide](./ssr.md).
+Integrating with Server Side routers and frameworks is very similar to what we just saw, with the addition that the data has to be passed from the server to the client to be hydrated into the cache there. To learn how, continue on to the [Server Rendering & Hydration guide](./ssr.md).
 
 [//]: # 'Materials'

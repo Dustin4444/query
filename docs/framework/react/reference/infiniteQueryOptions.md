@@ -17,3 +17,5 @@ You can generally pass everything to `infiniteQueryOptions` that you can also pa
 - `queryKey: QueryKey`
   - **Required**
   - The query key to generate options for.
+
+See [useInfiniteQuery](./useInfiniteQuery.md) for more information.

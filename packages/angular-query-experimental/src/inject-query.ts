@@ -1,7 +1,11 @@
 import { QueryObserver } from '@tanstack/query-core'
-import { assertInjector } from './util/assert-injector/assert-injector'
+import {
+  Injector,
+  assertInInjectionContext,
+  inject,
+  runInInjectionContext,
+} from '@angular/core'
 import { createBaseQuery } from './create-base-query'
-import type { Injector } from '@angular/core'
 import type { DefaultError, QueryKey } from '@tanstack/query-core'
 import type {
   CreateQueryOptions,
@@ -56,7 +60,6 @@ export interface InjectQueryOptions {
  * @param injectQueryFn - A function that returns query options.
  * @param options - Additional configuration
  * @returns The query result.
- * @public
  * @see https://tanstack.com/query/latest/docs/framework/angular/guides/queries
  */
 export function injectQuery<
@@ -108,7 +111,6 @@ export function injectQuery<
  * @param injectQueryFn - A function that returns query options.
  * @param options - Additional configuration
  * @returns The query result.
- * @public
  * @see https://tanstack.com/query/latest/docs/framework/angular/guides/queries
  */
 export function injectQuery<
@@ -160,7 +162,6 @@ export function injectQuery<
  * @param injectQueryFn - A function that returns query options.
  * @param options - Additional configuration
  * @returns The query result.
- * @public
  * @see https://tanstack.com/query/latest/docs/framework/angular/guides/queries
  */
 export function injectQuery<
@@ -212,14 +213,14 @@ export function injectQuery<
  * @param injectQueryFn - A function that returns query options.
  * @param options - Additional configuration
  * @returns The query result.
- * @public
  * @see https://tanstack.com/query/latest/docs/framework/angular/guides/queries
  */
 export function injectQuery(
   injectQueryFn: () => CreateQueryOptions,
   options?: InjectQueryOptions,
 ) {
-  return assertInjector(injectQuery, options?.injector, () =>
+  !options?.injector && assertInInjectionContext(injectQuery)
+  return runInInjectionContext(options?.injector ?? inject(Injector), () =>
     createBaseQuery(injectQueryFn, QueryObserver),
   ) as unknown as CreateQueryResult
 }

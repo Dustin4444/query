@@ -1,11 +1,32 @@
-import { describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { ref } from 'vue-demi'
 import { QueryClient as QueryClientOrigin } from '@tanstack/query-core'
 import { QueryClient } from '../queryClient'
 import { infiniteQueryOptions } from '../infiniteQueryOptions'
-import { flushPromises } from './test-utils'
 
-vi.mock('@tanstack/query-core')
+vi.mock('@tanstack/query-core', async () => {
+  const actual = await vi.importActual<{
+    QueryClient: typeof QueryClientOrigin
+  }>('@tanstack/query-core')
+
+  // Get the prototype methods dynamically
+  const prototypeMethods = Object.getOwnPropertyNames(
+    actual.QueryClient.prototype,
+  ).filter((prop): prop is keyof typeof actual.QueryClient.prototype => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      actual.QueryClient.prototype,
+      prop,
+    )
+    return typeof descriptor?.value === 'function' && prop !== 'constructor'
+  })
+
+  // Spy on all methods in the prototype
+  prototypeMethods.forEach((method) => {
+    vi.spyOn(actual.QueryClient.prototype, method)
+  })
+
+  return actual
+})
 
 const queryKeyRef = ['foo', ref('bar')]
 const queryKeyUnref = ['foo', 'bar']
@@ -13,8 +34,17 @@ const queryKeyUnref = ['foo', 'bar']
 const fn = () => 'mock'
 
 describe('QueryCache', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   describe('isFetching', () => {
-    test('should properly unwrap 1 parameter', async () => {
+    test('should properly unwrap 1 parameter', () => {
       const queryClient = new QueryClient()
 
       queryClient.isFetching({
@@ -28,7 +58,7 @@ describe('QueryCache', () => {
   })
 
   describe('isMutating', () => {
-    test('should properly unwrap 1 parameter', async () => {
+    test('should properly unwrap 1 parameter', () => {
       const queryClient = new QueryClient()
 
       queryClient.isMutating({
@@ -42,7 +72,7 @@ describe('QueryCache', () => {
   })
 
   describe('getQueryData', () => {
-    test('should properly unwrap 1 parameter', async () => {
+    test('should properly unwrap 1 parameter', () => {
       const queryClient = new QueryClient()
 
       queryClient.getQueryData(queryKeyRef)
@@ -54,7 +84,7 @@ describe('QueryCache', () => {
   })
 
   describe('getQueriesData', () => {
-    test('should properly unwrap queryKey param', async () => {
+    test('should properly unwrap queryKey param', () => {
       const queryClient = new QueryClient()
 
       queryClient.getQueriesData({ queryKey: queryKeyRef })
@@ -64,7 +94,7 @@ describe('QueryCache', () => {
       })
     })
 
-    test('should properly unwrap filters param', async () => {
+    test('should properly unwrap filters param', () => {
       const queryClient = new QueryClient()
 
       queryClient.getQueriesData({ queryKey: queryKeyRef })
@@ -76,7 +106,7 @@ describe('QueryCache', () => {
   })
 
   describe('setQueryData', () => {
-    test('should properly unwrap 3 parameter', async () => {
+    test('should properly unwrap 3 parameter', () => {
       const queryClient = new QueryClient()
 
       queryClient.setQueryData(queryKeyRef, fn, {
@@ -92,7 +122,7 @@ describe('QueryCache', () => {
   })
 
   describe('setQueriesData', () => {
-    test('should properly unwrap params with queryKey', async () => {
+    test('should properly unwrap params with queryKey', () => {
       const queryClient = new QueryClient()
 
       queryClient.setQueriesData({ queryKey: queryKeyRef }, fn, {
@@ -106,7 +136,7 @@ describe('QueryCache', () => {
       )
     })
 
-    test('should properly unwrap params with filters', async () => {
+    test('should properly unwrap params with filters', () => {
       const queryClient = new QueryClient()
 
       queryClient.setQueriesData({ queryKey: queryKeyRef }, fn, {
@@ -122,7 +152,7 @@ describe('QueryCache', () => {
   })
 
   describe('getQueryState', () => {
-    test('should properly unwrap 1 parameter', async () => {
+    test('should properly unwrap 1 parameter', () => {
       const queryClient = new QueryClient()
 
       queryClient.getQueryState(queryKeyRef)
@@ -134,7 +164,7 @@ describe('QueryCache', () => {
   })
 
   describe('removeQueries', () => {
-    test('should properly unwrap 1 parameter', async () => {
+    test('should properly unwrap 1 parameter', () => {
       const queryClient = new QueryClient()
 
       queryClient.removeQueries({
@@ -148,7 +178,7 @@ describe('QueryCache', () => {
   })
 
   describe('resetQueries', () => {
-    test('should properly unwrap 2 parameter', async () => {
+    test('should properly unwrap 2 parameter', () => {
       const queryClient = new QueryClient()
 
       queryClient.resetQueries(
@@ -168,7 +198,7 @@ describe('QueryCache', () => {
   })
 
   describe('cancelQueries', () => {
-    test('should properly unwrap 2 parameter', async () => {
+    test('should properly unwrap 2 parameter', () => {
       const queryClient = new QueryClient()
 
       queryClient.cancelQueries(
@@ -208,7 +238,7 @@ describe('QueryCache', () => {
     })
 
     // #7694
-    test('should call invalidateQueries immediately and refetchQueries after flushPromises', async () => {
+    test('should call invalidateQueries immediately and refetchQueries after sleep', async () => {
       const invalidateQueries = vi.spyOn(
         QueryClientOrigin.prototype,
         'invalidateQueries',
@@ -227,7 +257,7 @@ describe('QueryCache', () => {
       expect(invalidateQueries).toBeCalled()
       expect(refetchQueries).not.toBeCalled()
 
-      await flushPromises()
+      await vi.advanceTimersByTimeAsync(0)
 
       expect(refetchQueries).toBeCalled()
     })
@@ -252,14 +282,14 @@ describe('QueryCache', () => {
       expect(invalidateQueries).toBeCalled()
       expect(refetchQueries).not.toBeCalled()
 
-      await flushPromises()
+      await vi.advanceTimersByTimeAsync(0)
 
       expect(refetchQueries).not.toBeCalled()
     })
   })
 
   describe('refetchQueries', () => {
-    test('should properly unwrap 2 parameter', async () => {
+    test('should properly unwrap 2 parameter', () => {
       const queryClient = new QueryClient()
 
       queryClient.refetchQueries(
@@ -279,7 +309,7 @@ describe('QueryCache', () => {
   })
 
   describe('fetchQuery', () => {
-    test('should properly unwrap parameter', async () => {
+    test('should properly unwrap parameter', () => {
       const queryClient = new QueryClient()
 
       queryClient.fetchQuery({
@@ -293,7 +323,7 @@ describe('QueryCache', () => {
   })
 
   describe('prefetchQuery', () => {
-    test('should properly unwrap parameters', async () => {
+    test('should properly unwrap parameters', () => {
       const queryClient = new QueryClient()
 
       queryClient.prefetchQuery({ queryKey: queryKeyRef, queryFn: fn })
@@ -306,7 +336,7 @@ describe('QueryCache', () => {
   })
 
   describe('fetchInfiniteQuery', () => {
-    test('should properly unwrap parameter', async () => {
+    test('should properly unwrap parameter', () => {
       const queryClient = new QueryClient()
 
       queryClient.fetchInfiniteQuery({
@@ -314,12 +344,14 @@ describe('QueryCache', () => {
         initialPageParam: 0,
       })
 
-      expect(QueryClientOrigin.prototype.fetchInfiniteQuery).toBeCalledWith({
-        initialPageParam: 0,
-        queryKey: queryKeyUnref,
-      })
+      expect(QueryClientOrigin.prototype.fetchInfiniteQuery).toBeCalledWith(
+        expect.objectContaining({
+          initialPageParam: 0,
+          queryKey: queryKeyUnref,
+        }),
+      )
     })
-    test('should properly unwrap parameter using infiniteQueryOptions with unref', async () => {
+    test('should properly unwrap parameter using infiniteQueryOptions with unref', () => {
       const queryClient = new QueryClient()
 
       const options = infiniteQueryOptions({
@@ -330,15 +362,17 @@ describe('QueryCache', () => {
 
       queryClient.fetchInfiniteQuery(options)
 
-      expect(QueryClientOrigin.prototype.fetchInfiniteQuery).toBeCalledWith({
-        initialPageParam: 0,
-        queryKey: queryKeyUnref,
-      })
+      expect(QueryClientOrigin.prototype.fetchInfiniteQuery).toBeCalledWith(
+        expect.objectContaining({
+          initialPageParam: 0,
+          queryKey: queryKeyUnref,
+        }),
+      )
     })
   })
 
   describe('prefetchInfiniteQuery', () => {
-    test('should properly unwrap parameters', async () => {
+    test('should properly unwrap parameters', () => {
       const queryClient = new QueryClient()
 
       queryClient.prefetchInfiniteQuery({
@@ -356,7 +390,7 @@ describe('QueryCache', () => {
   })
 
   describe('setDefaultOptions', () => {
-    test('should properly unwrap parameters', async () => {
+    test('should properly unwrap parameters', () => {
       const queryClient = new QueryClient()
 
       queryClient.setDefaultOptions({
@@ -374,7 +408,7 @@ describe('QueryCache', () => {
   })
 
   describe('setQueryDefaults', () => {
-    test('should properly unwrap parameters', async () => {
+    test('should properly unwrap parameters', () => {
       const queryClient = new QueryClient()
 
       queryClient.setQueryDefaults(queryKeyRef, {
@@ -391,7 +425,7 @@ describe('QueryCache', () => {
   })
 
   describe('getQueryDefaults', () => {
-    test('should properly unwrap parameters', async () => {
+    test('should properly unwrap parameters', () => {
       const queryClient = new QueryClient()
 
       queryClient.getQueryDefaults(queryKeyRef)
@@ -403,7 +437,7 @@ describe('QueryCache', () => {
   })
 
   describe('setMutationDefaults', () => {
-    test('should properly unwrap parameters', async () => {
+    test('should properly unwrap parameters', () => {
       const queryClient = new QueryClient()
 
       queryClient.setMutationDefaults(queryKeyRef, {
@@ -420,7 +454,7 @@ describe('QueryCache', () => {
   })
 
   describe('getMutationDefaults', () => {
-    test('should properly unwrap parameters', async () => {
+    test('should properly unwrap parameters', () => {
       const queryClient = new QueryClient()
 
       queryClient.getMutationDefaults(queryKeyRef)

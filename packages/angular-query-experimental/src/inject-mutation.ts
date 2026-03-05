@@ -1,6 +1,7 @@
 import {
-  DestroyRef,
+  Injector,
   NgZone,
+  assertInInjectionContext,
   computed,
   effect,
   inject,
@@ -10,15 +11,19 @@ import {
 import {
   MutationObserver,
   QueryClient,
+  noop,
   notifyManager,
+  shouldThrowError,
 } from '@tanstack/query-core'
-import { assertInjector } from './util/assert-injector/assert-injector'
 import { signalProxy } from './signal-proxy'
-import { noop, shouldThrowError } from './util'
-import type { Injector } from '@angular/core'
+import { PENDING_TASKS } from './pending-tasks-compat'
+import type { PendingTaskRef } from './pending-tasks-compat'
 import type { DefaultError, MutationObserverResult } from '@tanstack/query-core'
-import type { CreateMutateFunction, CreateMutationResult } from './types'
-import type { CreateMutationOptions } from './mutation-options'
+import type {
+  CreateMutateFunction,
+  CreateMutationOptions,
+  CreateMutationResult,
+} from './types'
 
 export interface InjectMutationOptions {
   /**
@@ -36,139 +41,155 @@ export interface InjectMutationOptions {
  * @param injectMutationFn - A function that returns mutation options.
  * @param options - Additional configuration
  * @returns The mutation.
- * @public
  */
 export function injectMutation<
   TData = unknown,
   TError = DefaultError,
   TVariables = void,
-  TContext = unknown,
+  TOnMutateResult = unknown,
 >(
   injectMutationFn: () => CreateMutationOptions<
     TData,
     TError,
     TVariables,
-    TContext
+    TOnMutateResult
   >,
   options?: InjectMutationOptions,
-): CreateMutationResult<TData, TError, TVariables, TContext> {
-  return assertInjector(injectMutation, options?.injector, () => {
-    const destroyRef = inject(DestroyRef)
-    const ngZone = inject(NgZone)
-    const queryClient = inject(QueryClient)
+): CreateMutationResult<TData, TError, TVariables, TOnMutateResult> {
+  !options?.injector && assertInInjectionContext(injectMutation)
+  const injector = options?.injector ?? inject(Injector)
+  const ngZone = injector.get(NgZone)
+  const pendingTasks = injector.get(PENDING_TASKS)
+  const queryClient = injector.get(QueryClient)
 
-    /**
-     * computed() is used so signals can be inserted into the options
-     * making it reactive. Wrapping options in a function ensures embedded expressions
-     * are preserved and can keep being applied after signal changes
-     */
-    const optionsSignal = computed(injectMutationFn)
+  /**
+   * computed() is used so signals can be inserted into the options
+   * making it reactive. Wrapping options in a function ensures embedded expressions
+   * are preserved and can keep being applied after signal changes
+   */
+  const optionsSignal = computed(injectMutationFn)
 
-    const observerSignal = (() => {
-      let instance: MutationObserver<
-        TData,
-        TError,
-        TVariables,
-        TContext
-      > | null = null
-
-      return computed(() => {
-        return (instance ||= new MutationObserver(queryClient, optionsSignal()))
-      })
-    })()
-
-    const mutateFnSignal = computed<
-      CreateMutateFunction<TData, TError, TVariables, TContext>
-    >(() => {
-      const observer = observerSignal()
-      return (variables, mutateOptions) => {
-        observer.mutate(variables, mutateOptions).catch(noop)
-      }
-    })
-
-    /**
-     * Computed signal that gets result from mutation cache based on passed options
-     */
-    const resultFromInitialOptionsSignal = computed(() => {
-      const observer = observerSignal()
-      return observer.getCurrentResult()
-    })
-
-    /**
-     * Signal that contains result set by subscriber
-     */
-    const resultFromSubscriberSignal = signal<MutationObserverResult<
+  const observerSignal = (() => {
+    let instance: MutationObserver<
       TData,
       TError,
       TVariables,
-      TContext
-    > | null>(null)
+      TOnMutateResult
+    > | null = null
 
-    effect(
-      () => {
-        const observer = observerSignal()
-        const observerOptions = optionsSignal()
-
-        untracked(() => {
-          observer.setOptions(observerOptions)
-        })
-      },
-      {
-        injector: options?.injector,
-      },
-    )
-
-    effect(
-      () => {
-        // observer.trackResult is not used as this optimization is not needed for Angular
-        const observer = observerSignal()
-
-        untracked(() => {
-          const unsubscribe = ngZone.runOutsideAngular(() =>
-            observer.subscribe(
-              notifyManager.batchCalls((state) => {
-                ngZone.run(() => {
-                  if (
-                    state.isError &&
-                    shouldThrowError(observer.options.throwOnError, [
-                      state.error,
-                    ])
-                  ) {
-                    ngZone.onError.emit(state.error)
-                    throw state.error
-                  }
-
-                  resultFromSubscriberSignal.set(state)
-                })
-              }),
-            ),
-          )
-          destroyRef.onDestroy(unsubscribe)
-        })
-      },
-      {
-        injector: options?.injector,
-      },
-    )
-
-    const resultSignal = computed(() => {
-      const resultFromSubscriber = resultFromSubscriberSignal()
-      const resultFromInitialOptions = resultFromInitialOptionsSignal()
-
-      const result = resultFromSubscriber ?? resultFromInitialOptions
-
-      return {
-        ...result,
-        mutate: mutateFnSignal(),
-        mutateAsync: result.mutate,
-      }
+    return computed(() => {
+      return (instance ||= new MutationObserver(queryClient, optionsSignal()))
     })
+  })()
 
-    return signalProxy(resultSignal) as CreateMutationResult<
-      TData,
-      TError,
-      TVariables,
-      TContext
-    >
+  const mutateFnSignal = computed<
+    CreateMutateFunction<TData, TError, TVariables, TOnMutateResult>
+  >(() => {
+    const observer = observerSignal()
+    return (variables, mutateOptions) => {
+      observer.mutate(variables, mutateOptions).catch(noop)
+    }
   })
+
+  /**
+   * Computed signal that gets result from mutation cache based on passed options
+   */
+  const resultFromInitialOptionsSignal = computed(() => {
+    const observer = observerSignal()
+    return observer.getCurrentResult()
+  })
+
+  /**
+   * Signal that contains result set by subscriber
+   */
+  const resultFromSubscriberSignal = signal<MutationObserverResult<
+    TData,
+    TError,
+    TVariables,
+    TOnMutateResult
+  > | null>(null)
+
+  effect(
+    () => {
+      const observer = observerSignal()
+      const observerOptions = optionsSignal()
+
+      untracked(() => {
+        observer.setOptions(observerOptions)
+      })
+    },
+    {
+      injector,
+    },
+  )
+
+  effect(
+    (onCleanup) => {
+      // observer.trackResult is not used as this optimization is not needed for Angular
+      const observer = observerSignal()
+      let pendingTaskRef: PendingTaskRef | null = null
+
+      untracked(() => {
+        const unsubscribe = ngZone.runOutsideAngular(() =>
+          observer.subscribe(
+            notifyManager.batchCalls((state) => {
+              ngZone.run(() => {
+                // Track pending task when mutation is pending
+                if (state.isPending && !pendingTaskRef) {
+                  pendingTaskRef = pendingTasks.add()
+                }
+
+                // Clear pending task when mutation is no longer pending
+                if (!state.isPending && pendingTaskRef) {
+                  pendingTaskRef()
+                  pendingTaskRef = null
+                }
+
+                if (
+                  state.isError &&
+                  shouldThrowError(observer.options.throwOnError, [state.error])
+                ) {
+                  ngZone.onError.emit(state.error)
+                  throw state.error
+                }
+
+                resultFromSubscriberSignal.set(state)
+              })
+            }),
+          ),
+        )
+        onCleanup(() => {
+          // Clean up any pending task on destroy
+          if (pendingTaskRef) {
+            pendingTaskRef()
+            pendingTaskRef = null
+          }
+          unsubscribe()
+        })
+      })
+    },
+    {
+      injector,
+    },
+  )
+
+  const resultSignal = computed(() => {
+    const resultFromSubscriber = resultFromSubscriberSignal()
+    const resultFromInitialOptions = resultFromInitialOptionsSignal()
+
+    const result = resultFromSubscriber ?? resultFromInitialOptions
+
+    return {
+      ...result,
+      mutate: mutateFnSignal(),
+      mutateAsync: result.mutate,
+    }
+  })
+
+  return signalProxy(resultSignal) as CreateMutationResult<
+    TData,
+    TError,
+    TVariables,
+    TOnMutateResult
+  >
 }

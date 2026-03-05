@@ -121,7 +121,7 @@ Due to this change, disabled queries (even temporarily disabled ones) will start
   isInitialLoading // [!code ++]
 ```
 
-See also the guide on [disabling queries](./disabling-queries.md#isInitialLoading)
+See also the guide on [disabling queries](./disabling-queries.md#isloading-previously-isinitialloading)
 
 ### new API for `useQueries`
 
@@ -296,7 +296,7 @@ Since these plugins are no longer experimental, their import paths have also bee
 
 ### The `cancel` method on promises is no longer supported
 
-The [old `cancel` method](./query-cancellation.md#old-cancel-function) that allowed you to define a `cancel` function on promises, which was then used by the library to support query cancellation, has been removed. We recommend to use the [newer API](./query-cancellation.md) (introduced with v3.30.0) for query cancellation that uses the [`AbortController` API](https://developer.mozilla.org/en-US/docs/Web/API/AbortController) internally and provides you with an [`AbortSignal` instance](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) for your query function to support query cancellation.
+The old `cancel` method (which allowed you to define a `cancel` function on promises and was used by the library to support query cancellation) has been removed. We recommend using the [newer API](./query-cancellation.md) (introduced with v3.30.0) for query cancellation, which uses the [`AbortController` API](https://developer.mozilla.org/en-US/docs/Web/API/AbortController) internally and provides you with an [`AbortSignal` instance](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) in your query function to support query cancellation.
 
 ### TypeScript
 
@@ -304,7 +304,7 @@ Types now require using TypeScript v4.1 or greater
 
 ### Supported Browsers
 
-As of v4, React Query is optimized for modern browsers. We have updated our browserslist to produce a more modern, performant and smaller bundle. You can read about the requirements [here](../../installation#requirements).
+As of v4, React Query is optimized for modern browsers. We have updated our browserslist to produce a more modern, performant and smaller bundle. You can read about the requirements [here](../installation#requirements).
 
 ### `setLogger` is removed
 
@@ -419,7 +419,7 @@ In v3, React Query has always fired off queries and mutations, but then taken th
 - You are offline and want to fire off a query that doesn't necessarily need network connection (because you _can_ use React Query for something other than data fetching), but it fails for some other reason. That query will now be paused until you go online again.
 - Window focus refetching didn't do anything at all if you were offline.
 
-With v4, React Query introduces a new `networkMode` to tackle all these issues. Please read the dedicated page about the new [Network mode](../network-mode) for more information.
+With v4, React Query introduces a new `networkMode` to tackle all these issues. Please read the dedicated page about the new [Network mode](./network-mode) for more information.
 
 ### Tracked Queries per default
 

@@ -101,7 +101,7 @@ This part is pretty similar to what we did in the SSR guide, we just need to spl
 
 ### Prefetching and de/hydrating data
 
-Let's next look at how to actually prefetch data and dehydrate and hydrate it. This is what it looked like using the **Next.js pages router**:
+Next, let’s look at how to actually prefetch data, then dehydrate and hydrate it. This is what it looked like using the **Next.js Pages Router**:
 
 ```tsx
 // pages/posts.tsx
@@ -530,7 +530,26 @@ export default function Posts() {
 
 Now, your `getPosts` function can return e.g. `Temporal` datetime objects and the data will be serialized and deserialized on the client, assuming your transformer can serialize and deserialize those data types.
 
-For more information, check out the [Next.js App with Prefetching Example](../examples/react/nextjs-app-prefetching).
+For more information, check out the [Next.js App with Prefetching Example](../examples/nextjs-app-prefetching).
+
+### Using the Persist Adapter with Streaming
+
+If you're using the persist adapter with the [Streaming with Server Components](#streaming-with-server-components) feature, you need to be careful not to save promises to storage. Since pending queries can be dehydrated and streamed to the client, you should configure the persister to only persist successful queries:
+
+```tsx
+<PersistQueryClientProvider
+  client={queryClient}
+  persistOptions={{
+    persister,
+    // We don't want to save promises into the storage, so we only persist successful queries
+    dehydrateOptions: { shouldDehydrateQuery: defaultShouldDehydrateQuery },
+  }}
+>
+  {children}
+</PersistQueryClientProvider>
+```
+
+This ensures that only successfully resolved queries are persisted to storage, preventing serialization issues with pending promises.
 
 ## Experimental streaming without prefetching in Next.js
 
@@ -597,7 +616,7 @@ export function Providers(props: { children: React.ReactNode }) {
 }
 ```
 
-For more information, check out the [NextJs Suspense Streaming Example](../examples/react/nextjs-suspense-streaming).
+For more information, check out the [NextJs Suspense Streaming Example](../examples/nextjs-suspense-streaming).
 
 The big upside is that you no longer need to prefetch queries manually to have SSR work, and it even still streams in the result! This gives you phenomenal DX and lower code complexity.
 
@@ -621,3 +640,11 @@ If you value DX/iteration/shipping speed with low code complexity over performan
 Server Components and streaming are still fairly new concepts and we are still figuring out how React Query fits in and what improvements we can make to the API. We welcome suggestions, feedback and bug reports!
 
 Similarly, it would be impossible to teach all the intricacies of this new paradigm all in one guide, on the first try. If you are missing some piece of information here or have suggestions on how to improve this content, also get in touch, or even better, click the "Edit on GitHub" button below and help us out.
+
+[//]: # 'Materials'
+
+## Further reading
+
+To understand if your application can benefit from React Query when also using Server Components, see the article [You Might Not Need React Query](https://tkdodo.eu/blog/you-might-not-need-react-query).
+
+[//]: # 'Materials'

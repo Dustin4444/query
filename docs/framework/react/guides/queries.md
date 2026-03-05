@@ -7,7 +7,11 @@ title: Queries
 
 A query is a declarative dependency on an asynchronous source of data that is tied to a **unique key**. A query can be used with any Promise based method (including GET and POST methods) to fetch data from a server. If your method modifies data on the server, we recommend using [Mutations](./mutations.md) instead.
 
+[//]: # 'SubscribeDescription'
+
 To subscribe to a query in your components or custom hooks, call the `useQuery` hook with at least:
+
+[//]: # 'SubscribeDescription'
 
 - A **unique key for the query**
 - A function that returns a promise that:
@@ -140,6 +144,6 @@ So keep in mind that a query can be in `pending` state without actually fetching
 
 ## Further Reading
 
-For an alternative way of performing status checks, have a look at the [Community Resources](../community/tkdodos-blog.md#4-status-checks-in-react-query).
+For an alternative way of performing status checks, have a look at [this article by TkDodo](https://tkdodo.eu/blog/status-checks-in-react-query).
 
 [//]: # 'Materials'
