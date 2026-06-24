@@ -57,9 +57,9 @@
   },
   "devDependencies": {
     "@angular/animations": "^20.0.0",
-    "@angular/common": "^20.0.0",
+    "@angular/common": "^20.3.25",
     "@angular/compiler": "^20.0.0",
-    "@angular/core": "^20.0.0",
+    "@angular/core": "^20.3.25",
     "@angular/platform-browser": "^20.0.0",
     "@tanstack/angular-query-experimental": "workspace:*",
     "@tanstack/query-test-utils": "workspace:*",
